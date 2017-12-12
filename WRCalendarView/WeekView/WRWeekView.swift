@@ -16,10 +16,11 @@ public protocol WRWeekViewDelegate: NSObjectProtocol  {
 }
 
 public class WRWeekView: UIView {
+    
     let pageCount = 7
     let dateFormatter = DateFormatter()
     
-    var collectionView: UICollectionView!
+    public var collectionView: UICollectionView!
     var flowLayout: WRWeekViewFlowLayout!
     var initDate: Date!
     var startDate: Date!
