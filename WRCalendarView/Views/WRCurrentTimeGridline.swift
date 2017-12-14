@@ -10,7 +10,7 @@ import UIKit
 class WRCurrentTimeGridline: UICollectionReusableView {
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UIColor(hexString: "fd3935")
+        backgroundColor = UIColor(fromHex: "fd3935")
     }
     
     required init?(coder aDecoder: NSCoder) {

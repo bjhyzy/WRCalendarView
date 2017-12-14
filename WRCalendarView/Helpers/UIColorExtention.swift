@@ -25,8 +25,8 @@ extension UIColor {
         self.init(red: CGFloat(r) / 255.0, green: CGFloat(g) / 255.0, blue: CGFloat(b) / 255.0, alpha: a)
     }
     
-    convenience init?(hexString: String) {
-        guard let hex = hexString.hex else {
+    convenience init?(fromHex: String) {
+        guard let hex = fromHex.hex else {
             return nil
         }
         self.init(hex: hex)

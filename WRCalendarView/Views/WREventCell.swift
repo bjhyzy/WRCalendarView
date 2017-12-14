@@ -56,11 +56,11 @@ class WREventCell: UICollectionViewCell {
     }
     
     func backgroundColorHighlighted(_ selected: Bool) -> UIColor {
-        return selected ? UIColor(hexString: "35b1f1")! : UIColor(hexString: "35b1f1")!.withAlphaComponent(0.1)
+        return selected ? UIColor(fromHex: "35b1f1")! : UIColor(fromHex: "35b1f1")!.withAlphaComponent(0.1)
     }
     
     func textColorHighlighted(_ selected: Bool) -> UIColor {
-        return selected ? UIColor.white : UIColor(hexString: "21729c")!
+        return selected ? UIColor.white : UIColor(fromHex: "21729c")!
     }
     
     func borderColor() -> UIColor {
