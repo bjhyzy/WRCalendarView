@@ -25,7 +25,7 @@ public class WRWeekView: UIView {
     var initDate: Date!
     var startDate: Date!
     var initialContentOffset = CGPoint.zero
-    var currentPage: Int!
+    public var currentPage: Int!
     var loading = false
     var isFirst = true
     var daysToShow: Int = 0
@@ -226,7 +226,7 @@ public class WRWeekView: UIView {
         }
     }
     
-    fileprivate func loadNextPage() {
+    public func loadNextPage() {
         guard !loading else { return }
         DispatchQueue.main.async { [unowned self] in
             self.loading = true
@@ -236,7 +236,7 @@ public class WRWeekView: UIView {
         }
     }
     
-    fileprivate func loadPrevPage() {
+    public func loadPrevPage() {
         guard !loading else { return }
         DispatchQueue.main.async { [unowned self] in
             self.loading = true
@@ -248,7 +248,7 @@ public class WRWeekView: UIView {
         }
     }
     
-    fileprivate func setCurrentPage(_ _currentPage: Int, animated: Bool = true) {
+    public func setCurrentPage(_ _currentPage: Int, animated: Bool = true) {
         currentPage = _currentPage
         let pageWidth = CGFloat(daysToShowOnScreen) * flowLayout.sectionWidth
         if currentPage < 1 { currentPage = 1 }
