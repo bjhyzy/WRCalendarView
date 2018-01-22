@@ -34,6 +34,9 @@ public class WRWeekView: UIView {
     var events = [WREvent]()
     var eventBySection = [String: [WREvent]]()
     
+    //每周开始的星期
+    public var firstWeekday:Int = 2 //monday
+    
     public weak var delegate: WRWeekViewDelegate?
     
     public var calendarType: CalendarType = .week {
@@ -70,7 +73,7 @@ public class WRWeekView: UIView {
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.backgroundColor = UIColor.white
         addSubview(collectionView)
-
+        
         let views: [String: AnyObject] = ["collectionView": collectionView]
         addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[collectionView]|", options: [], metrics: nil, views: views))
         addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[collectionView]|", options: [], metrics: nil, views: views))
@@ -86,7 +89,7 @@ public class WRWeekView: UIView {
         let podBundle = Bundle(for: WRWeekView.self)
         let bundleURL = podBundle.url(forResource: "WRCalendarView", withExtension: "bundle")
         let bundle = Bundle(url: bundleURL!)!
-
+        
         //cell
         collectionView.register(UINib.init(nibName: WREventCell.className, bundle: bundle),
                                 forCellWithReuseIdentifier: ReuseIdentifiers.defaultCell)
@@ -115,8 +118,14 @@ public class WRWeekView: UIView {
         flowLayout.register(WRCurrentTimeGridline.self,
                             forDecorationViewOfKind: DecorationViewKinds.currentTimeGridline)
         flowLayout.register(UINib(nibName: WRCurrentTimeIndicator.className, bundle: bundle),
-                             forDecorationViewOfKind: DecorationViewKinds.currentTimeIndicator)
+                            forDecorationViewOfKind: DecorationViewKinds.currentTimeIndicator)
     }
+    
+    fileprivate lazy var calendar:Calendar = {
+        var calendar = Calendar.current
+        calendar.firstWeekday = self.firstWeekday
+        return calendar
+    }()
     
     public override func layoutSubviews() {
         super.layoutSubviews()
@@ -126,12 +135,13 @@ public class WRWeekView: UIView {
     func tapHandler(_ recognizer: UITapGestureRecognizer) {
         let point = recognizer.location(in: self)
         
-        var components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: getDateForX(point.x))
+        
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: getDateForX(point.x))
         let (hour, minute) = getDateForY(point.y)
         components.hour = hour
         components.minute = minute
         
-        delegate?.tap(date: Calendar.current.date(from: components)!)
+        delegate?.tap(date: calendar.date(from: components)!)
     }
     
     // MARK: - public actions
@@ -163,12 +173,12 @@ public class WRWeekView: UIView {
         flowLayout.invalidateLayoutCache()
         collectionView.reloadData()
     }
-
+    
     // MARK: - private actions
     //  Get date from point
     fileprivate func getDateForX(_ x: CGFloat) -> Date {
         let section = Int((x + collectionView.contentOffset.x - flowLayout.rowHeaderWidth) / flowLayout.sectionWidth)
-        return Calendar.current.date(from: flowLayout.daysForSection(section))!
+        return calendar.date(from: flowLayout.daysForSection(section))!
     }
     
     fileprivate func getDateForY(_ y: CGFloat) -> (Int, Int) {
@@ -202,13 +212,13 @@ public class WRWeekView: UIView {
         switch calendarType {
         case .week:
             daysToShowOnScreen = 7
-            let weekComponent = Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: calendarDate)
-            startDate = Calendar.current.date(from: weekComponent)
+            let weekComponent = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: calendarDate)
+            startDate = calendar.date(from: weekComponent)
         case .day:
             daysToShowOnScreen = 1
             startDate = calendarDate
         }
-
+        
         currentPage = Int(pageCount / 2) + 1
         daysToShow = daysToShowOnScreen * pageCount
         initDate = startDate - (daysToShowOnScreen * (currentPage - 1)).days
@@ -218,7 +228,7 @@ public class WRWeekView: UIView {
             self.forceReload(false)
             self.setCurrentPage(self.currentPage, animated: animated)
             
-            // 처음 화면이 보여지거나 schedule type이 바뀔때만 현재 시간 보여줌
+            // 第一次看到画面或schedule type改变当前时间的时候
             if self.isFirst {
                 self.flowLayout.scrollCollectionViewToCurrentTime()
                 self.isFirst = false
@@ -254,14 +264,14 @@ public class WRWeekView: UIView {
         if currentPage < 1 { currentPage = 1 }
         
         collectionView.setContentOffset(CGPoint.init(x: pageWidth * CGFloat(currentPage - 1),
-        y: collectionView.contentOffset.y),
+                                                     y: collectionView.contentOffset.y),
                                         animated: animated)
         
         delegate?.view(startDate: flowLayout.dateForColumnHeader(at: IndexPath(row: 0, section: (currentPage - 1) * daysToShowOnScreen)),
                        interval: daysToShowOnScreen)
     }
     
-    // directionalLockEnabled 이 제대로 작동안해서 직접 막아야 함
+    // directionalLockEnabled 이 正常操作期间，直接阻止
     fileprivate func determineScrollDirection() -> ScrollDirection {
         var scrollDirection: ScrollDirection
         
@@ -332,9 +342,10 @@ extension WRWeekView: UICollectionViewDelegate, UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ReuseIdentifiers.defaultCell,
                                                       for: indexPath) as? WREventCell
         guard cell != nil else { fatalError() }
-        guard events != nil else { fatalError() }
-        
-        cell!.event = events![indexPath.row]
+        if events != nil {
+            
+            cell!.event = events![indexPath.row]
+        }
         
         return cell!
     }
@@ -366,8 +377,10 @@ extension WRWeekView: UICollectionViewDelegate, UICollectionViewDataSource {
     }
     
     public func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        // y방향 스크롤시에는 페이징 불필요
-        if velocity.x == 0 && velocity.y != 0 { return }
+        // y方向滚动，分页不必要
+        if velocity.x == 0 && velocity.y != 0 {
+            return
+        }
         
         targetContentOffset.pointee = scrollView.contentOffset
         let pageWidth = CGFloat(daysToShowOnScreen) * flowLayout.sectionWidth
@@ -421,7 +434,7 @@ extension WRWeekView: WRWeekViewFlowLayoutDelegate {
     func collectionView(_ collectionView: UICollectionView, layout: WRWeekViewFlowLayout, startTimeForItemAtIndexPath indexPath: IndexPath) -> Date {
         let date = flowLayout.dateForColumnHeader(at: indexPath)
         let key = dateFormatter.string(from: date)
-
+        
         if let events = eventBySection[key] {
             let event = events[indexPath.item]
             return event.beginning!
